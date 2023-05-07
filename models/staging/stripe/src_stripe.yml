@@ -1,0 +1,41 @@
+version: 2
+
+sources:
+  - name: stripe
+    database: dbt-tutorial
+    description: Payment data from Stripe for our jaffle shop app.
+    schema: stripe
+    tables:
+      - name: payment
+        columns:
+          - name: id
+            tests:
+              - not_null
+              - unique:
+                  config:
+                    severity: error
+                    error_if: ">100"
+                    warn_if: ">10"
+          - name: paymentmethod
+            tests:
+              - accepted_values:
+                  values: ['credit_card', 'bank_transfer', 'gift_card', 'coupon']
+                  config:
+                    where: "status != 'fail'"
+          - name: status
+            tests:
+              - accepted_values:
+                  values: ['success', 'fail']
+                  config:
+                    limit: 10
+                    store_failures: true
+                    schema: abc_test
+        loaded_at_field: _batched_at
+        freshness: 
+          warn_after:
+            count: 12
+            period: hour
+          error_after:
+            count: 24
+            period: hour
+        
